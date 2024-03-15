@@ -3,9 +3,11 @@ from PIL import Image
 
 from util import get_limits
 
-
 color = [0, 255, 0]  # color in BGR colorspace
 cap = cv2.VideoCapture(0)
+
+num_slices = 8  # Number of vertical slices
+
 while True:
     ret, frame = cap.read()
 
@@ -21,10 +23,14 @@ while True:
 
     if bbox is not None:
         x1, y1, x2, y2 = bbox
+        center_x = (x1 + x2) // 2
+        screen_width = frame.shape[1]  # Width of the frame
+        slice_width = screen_width // num_slices
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
 
-    print(bbox)
+        slice_index = center_x // slice_width
+        print("Object is in slice:", slice_index + 1)
 
     cv2.imshow('Conductor Cam', frame)
 
@@ -32,6 +38,4 @@ while True:
         break
 
 cap.release()
-
 cv2.destroyAllWindows()
-
