@@ -1,9 +1,10 @@
 import cv2
-from PIL import Image
 import numpy as np
+from PIL import Image
 import requests
 import imutils
 import threading
+import os
 
 from util import get_limits
 
@@ -34,10 +35,39 @@ def fetch_images(url):
             screen_width = img.shape[1]  # Width of the frame
             slice_width = screen_width // num_slices
 
-            # cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 0)
-
             slice_index = center_x // slice_width
             print("Object is in slice:", slice_index + 1)
+
+            # Determine the image path based on the slice index
+            image_folder = "folder1"
+            if 1 <= slice_index + 1 <= 2:
+                image_name = "img1.png"
+            elif 3 <= slice_index + 1 <= 4:
+                image_name = "img2.png"
+            elif 5 <= slice_index + 1 <= 6:
+                image_name = "img3.png"
+            elif 7 <= slice_index + 1 <= 8:
+                image_name = "img4.png"
+            else:
+                # Default image
+                image_name = "default.png"
+
+            # Read logo and resize
+            image_path = os.path.join(image_folder, image_name)
+            logo = cv2.imread(image_path)
+            size = 100
+            logo = cv2.resize(logo, (size, size))
+
+            # Create a mask of logo
+            img2gray = cv2.cvtColor(logo, cv2.COLOR_BGR2GRAY)
+            ret, mask = cv2.threshold(img2gray, 1, 255, cv2.THRESH_BINARY)
+
+            # Region of Image (ROI), where we want to insert logo
+            roi = img[-size-10:-10, -size-10:-10]
+
+            # Set an index of where the mask is
+            roi[np.where(mask)] = 0
+            roi += logo
 
         cv2.imshow('Conductor Cam', img)
 
