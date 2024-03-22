@@ -1,21 +1,18 @@
 import cv2
 import numpy as np
 from PIL import Image
-import requests
 import imutils
 import threading
 import os
-
 from util import get_limits
 
 color = [0, 255, 0]  # color in BGR colorspace
 
-# Function to fetch images from the URL
-def fetch_images(url):
+# Function to fetch images from the webcam
+def fetch_images(camera_index):
+    cap = cv2.VideoCapture(camera_index)
     while True:
-        img_resp = requests.get(url)
-        img_arr = np.array(bytearray(img_resp.content), dtype=np.uint8)
-        img = cv2.imdecode(img_arr, -1)
+        ret, img = cap.read()
         img = imutils.resize(img, width=1000, height=1800)  # Adjust the resize dimensions as needed
 
         # Perform object detection on the fetched frame
@@ -74,11 +71,12 @@ def fetch_images(url):
         if cv2.waitKey(1) & 0xFF == 27:  # Press Esc key to exit
             break
 
-# Replace the below URL with your own. Make sure to add "/shot.jpg" at the end.
-url = "http://192.168.100.32:8080/shot.jpg"
+    # Release the capture
+    cap.release()
 
-# Create a thread for fetching images
-fetch_thread = threading.Thread(target=fetch_images, args=(url,))
+# Create a thread for fetching images from the webcam (assuming camera index 1)
+camera_index = 1
+fetch_thread = threading.Thread(target=fetch_images, args=(camera_index,))
 fetch_thread.start()
 
 num_slices = 8  # Number of vertical slices
