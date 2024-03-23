@@ -2,11 +2,15 @@ import cv2
 import numpy as np
 from PIL import Image
 import imutils
+import pygame
 import threading
 import os
 from util import get_limits
 
 color = [0, 255, 0]  # color in BGR colorspace
+
+# Initialize pygame mixer
+pygame.mixer.init()
 
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
@@ -35,8 +39,19 @@ def fetch_images(camera_index):
             slice_index = center_x // slice_width
             print("Object is in slice:", slice_index + 1)
 
+            # Play sound based on slice index
+            sound_folder = "notes_piano"
+            sound_name = f"{slice_index + 1}.mp3"
+            sound_path = os.path.join(sound_folder, sound_name)
+            if os.path.exists(sound_path):
+                try:
+                    pygame.mixer.music.load(sound_path)
+                    pygame.mixer.music.play()
+                except Exception as e:
+                    print("Error playing sound:", e)
+
             # Determine the image path based on the slice index
-            image_folder = "folder1"
+            image_folder = "img_piano"
             if 1 <= slice_index + 1 <= 2:
                 image_name = "img1.png"
             elif 3 <= slice_index + 1 <= 4:
@@ -60,7 +75,7 @@ def fetch_images(camera_index):
             ret, mask = cv2.threshold(img2gray, 1, 255, cv2.THRESH_BINARY)
 
             # Region of Image (ROI), where we want to insert logo
-            roi = img[-size-10:-10, -size-10:-10]
+            roi = img[-size - 10:-10, -size - 10:-10]
 
             # Set an index of where the mask is
             roi[np.where(mask)] = 0
@@ -75,7 +90,7 @@ def fetch_images(camera_index):
     cap.release()
 
 # Create a thread for fetching images from the webcam (assuming camera index 1)
-camera_index = 1
+camera_index = 0
 fetch_thread = threading.Thread(target=fetch_images, args=(camera_index,))
 fetch_thread.start()
 
