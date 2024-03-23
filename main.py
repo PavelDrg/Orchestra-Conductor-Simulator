@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from PIL import Image
 import imutils
 import pygame
 import threading
@@ -12,12 +11,16 @@ color = [0, 255, 0]  # color in BGR colorspace
 # Initialize pygame mixer
 pygame.mixer.init()
 
+
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
     cap = cv2.VideoCapture(camera_index)
     while True:
         ret, img = cap.read()
-        img = imutils.resize(img, width=1000, height=1800)  # Adjust the resize dimensions as needed
+        if not ret:
+            break
+
+        img = imutils.resize(img, width=800)  # Adjust the resize dimensions as needed
 
         # Perform object detection on the fetched frame
         hsvImage = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -26,13 +29,11 @@ def fetch_images(camera_index):
 
         mask = cv2.inRange(hsvImage, lowerLimit, upperLimit)
 
-        mask_ = Image.fromarray(mask)
+        bbox = cv2.boundingRect(mask)
 
-        bbox = mask_.getbbox()
-
-        if bbox is not None:
-            x1, y1, x2, y2 = bbox
-            center_x = (x1 + x2) // 2
+        if bbox[2] > 0 and bbox[3] > 0:
+            x1, y1, w, h = bbox
+            center_x = x1 + w // 2
             screen_width = img.shape[1]  # Width of the frame
             slice_width = screen_width // num_slices
 
@@ -70,16 +71,8 @@ def fetch_images(camera_index):
             size = 100
             logo = cv2.resize(logo, (size, size))
 
-            # Create a mask of logo
-            img2gray = cv2.cvtColor(logo, cv2.COLOR_BGR2GRAY)
-            ret, mask = cv2.threshold(img2gray, 1, 255, cv2.THRESH_BINARY)
-
-            # Region of Image (ROI), where we want to insert logo
-            roi = img[-size - 10:-10, -size - 10:-10]
-
-            # Set an index of where the mask is
-            roi[np.where(mask)] = 0
-            roi += logo
+            # Overlay image on the frame
+            img[-size - 10:-10, -size - 10:-10] = logo
 
         cv2.imshow('Conductor Cam', img)
 
@@ -89,8 +82,9 @@ def fetch_images(camera_index):
     # Release the capture
     cap.release()
 
+
 # Create a thread for fetching images from the webcam (assuming camera index 1)
-camera_index = 0
+camera_index = 1
 fetch_thread = threading.Thread(target=fetch_images, args=(camera_index,))
 fetch_thread.start()
 
