@@ -68,11 +68,11 @@ def fetch_images(camera_index):
                     sound_path = os.path.join("notes_piano", f"{slice_index + 1}.mp3")
                     if os.path.exists(sound_path):
                         try:
-                            # Stop the previous sound if playing
+                            # Fade out the previous sound if playing
                             if current_channel is not None and current_channel.get_busy():
-                                current_channel.stop()
+                                current_channel.fadeout(500)  # Fade out over 500 milliseconds
                             sound = pygame.mixer.Sound(sound_path)
-                            current_channel = sound.play()
+                            current_channel = sound.play(fade_ms=500)  # Fade in over 500 milliseconds
                             prev_slice_index = slice_index
                         except Exception as e:
                             print("Error playing sound:", e)
