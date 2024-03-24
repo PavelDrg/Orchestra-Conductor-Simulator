@@ -20,9 +20,16 @@ prev_slice_index = None
 # Currently playing sound channel
 current_channel = None
 
+# Number of vertical slices
+num_slices = 8
+
+# Current folder indices for notes and images
+current_notes_folder = 1
+current_img_folder = 1
+
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
-    global start_detection, prev_slice_index, current_channel
+    global start_detection, prev_slice_index, current_channel, current_notes_folder, current_img_folder
     cap = cv2.VideoCapture(camera_index)
     while True:
         ret, img = cap.read()
@@ -32,17 +39,8 @@ def fetch_images(camera_index):
         img = imutils.resize(img, width=800)  # Adjust the resize dimensions as needed
 
         # Add texts for start and stop
-        start_text = "Start (s)"
-        stop_text = "Stop (q)"
+        start_text = "Start (s)    Stop (q)    Choir (1)    Brass(2)"
         cv2.putText(img, start_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-        # Calculate the width of start text to place stop text next to it
-        start_text_size = cv2.getTextSize(start_text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)[0]
-        stop_text_size = cv2.getTextSize(stop_text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)[0]
-
-        # Add stop text to the right of start text
-        stop_text_x = 40 + start_text_size[0] + 20  # Adjust spacing as needed
-        cv2.putText(img, stop_text, (stop_text_x, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         if start_detection:
             # Perform object detection on the fetched frame
@@ -65,7 +63,7 @@ def fetch_images(camera_index):
 
                 # Play sound based on slice index if the slice has changed
                 if slice_index != prev_slice_index:
-                    sound_path = os.path.join("notes_piano", f"{slice_index + 1}.mp3")
+                    sound_path = os.path.join(f"notes_{current_notes_folder}", f"{slice_index + 1}.mp3")
                     if os.path.exists(sound_path):
                         try:
                             # Fade out the previous sound if playing
@@ -78,7 +76,7 @@ def fetch_images(camera_index):
                             print("Error playing sound:", e)
 
                 # Determine the image path based on the slice index
-                image_folder = "img_piano"
+                image_folder = f"img_{current_img_folder}"
                 if 1 <= slice_index + 1 <= 2:
                     image_name = "img1.png"
                 elif 3 <= slice_index + 1 <= 4:
@@ -109,6 +107,12 @@ def fetch_images(camera_index):
             start_detection = True
         elif key == ord('q'):  # Press 'q' to stop detection
             start_detection = False
+        elif key == ord('1'):  # Press '1' to switch to notes and images folder 1
+            current_notes_folder = 1
+            current_img_folder = 1
+        elif key == ord('2'):  # Press '2' to switch to notes and images folder 2
+            current_notes_folder = 2
+            current_img_folder = 2
 
     # Release the capture
     cap.release()
@@ -117,8 +121,6 @@ def fetch_images(camera_index):
 camera_index = 1
 fetch_thread = threading.Thread(target=fetch_images, args=(camera_index,))
 fetch_thread.start()
-
-num_slices = 8  # Number of vertical slices
 
 # Dummy loop to keep the main thread alive
 while True:
