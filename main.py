@@ -14,10 +14,15 @@ pygame.mixer.init()
 # Flag to control detection process
 start_detection = False
 
+# Previously detected slice index
+prev_slice_index = None
+
+# Currently playing sound channel
+current_channel = None
 
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
-    global start_detection
+    global start_detection, prev_slice_index, current_channel
     cap = cv2.VideoCapture(camera_index)
     while True:
         ret, img = cap.read()
@@ -58,16 +63,19 @@ def fetch_images(camera_index):
                 slice_index = center_x // slice_width
                 print("Object is in slice:", slice_index + 1)
 
-                # Play sound based on slice index
-                sound_folder = "notes_piano"
-                sound_name = f"{slice_index + 1}.mp3"
-                sound_path = os.path.join(sound_folder, sound_name)
-                if os.path.exists(sound_path):
-                    try:
-                        pygame.mixer.music.load(sound_path)
-                        pygame.mixer.music.play()
-                    except Exception as e:
-                        print("Error playing sound:", e)
+                # Play sound based on slice index if the slice has changed
+                if slice_index != prev_slice_index:
+                    sound_path = os.path.join("notes_piano", f"{slice_index + 1}.mp3")
+                    if os.path.exists(sound_path):
+                        try:
+                            # Stop the previous sound if playing
+                            if current_channel is not None and current_channel.get_busy():
+                                current_channel.stop()
+                            sound = pygame.mixer.Sound(sound_path)
+                            current_channel = sound.play()
+                            prev_slice_index = slice_index
+                        except Exception as e:
+                            print("Error playing sound:", e)
 
                 # Determine the image path based on the slice index
                 image_folder = "img_piano"
@@ -104,7 +112,6 @@ def fetch_images(camera_index):
 
     # Release the capture
     cap.release()
-
 
 # Create a thread for fetching images from the webcam (assuming camera index 1)
 camera_index = 1
