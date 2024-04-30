@@ -39,7 +39,7 @@ def fetch_images(camera_index):
         img = imutils.resize(img, width=800)  # Adjust the resize dimensions as needed
 
         # Add texts for start and stop
-        start_text = "Start (s)    Stop (q)    Choir (1)    Brass(2)"
+        start_text = "Start (s)    Stop (q)    Choir (1)    Brass(2)    Strings(3)"
         cv2.putText(img, start_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         if start_detection:
@@ -107,18 +107,24 @@ def fetch_images(camera_index):
             start_detection = True
         elif key == ord('q'):  # Press 'q' to stop detection
             start_detection = False
+            # Stop the currently playing sound abruptly
+            if current_channel is not None and current_channel.get_busy():
+                current_channel.stop()
         elif key == ord('1'):  # Press '1' to switch to notes and images folder 1
             current_notes_folder = 1
             current_img_folder = 1
         elif key == ord('2'):  # Press '2' to switch to notes and images folder 2
             current_notes_folder = 2
             current_img_folder = 2
+        elif key == ord('3'):  # Press '3' to switch to notes and images folder 3
+            current_notes_folder = 3
+            current_img_folder = 3
 
     # Release the capture
     cap.release()
 
 # Create a thread for fetching images from the webcam (assuming camera index 1)
-camera_index = 1
+camera_index = 0
 fetch_thread = threading.Thread(target=fetch_images, args=(camera_index,))
 fetch_thread.start()
 
