@@ -5,8 +5,17 @@ import pygame
 import threading
 import os
 from util import get_limits
+import pyaudiowpatch as pyaudio
+import time
+import wave
 
 color = [0, 255, 0]  # color in BGR colorspace
+
+# Audio recording parameters
+DURATION = 10.0
+CHUNK_SIZE = 512
+temp_filename = "D:/Proiecte AM/1/recordings/temp.wav"  # Temporary filename
+filename = "D:/Proiecte AM/1/recordings/loopback_record.wav"  # Final filename
 
 # Initialize pygame mixer
 pygame.mixer.init()
@@ -26,6 +35,68 @@ num_slices = 8
 # Current folder indices for notes and images
 current_notes_folder = 1
 current_img_folder = 1
+
+# Function to handle audio recording
+def record_audio():
+    with pyaudio.PyAudio() as p:
+        try:
+            # Get default WASAPI info
+            wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
+        except OSError:
+            print("Looks like WASAPI is not available on the system. Exiting...")
+            return
+
+        # Get default WASAPI speakers
+        default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
+
+        if not default_speakers["isLoopbackDevice"]:
+            for loopback in p.get_loopback_device_info_generator():
+                """
+                Try to find loopback device with same name(and [Loopback suffix]).
+                Unfortunately, this is the most adequate way at the moment.
+                """
+                if default_speakers["name"] in loopback["name"]:
+                    default_speakers = loopback
+                    break
+            else:
+                print(
+                    "Default loopback output device not found.\n\nRun `python -m pyaudiowpatch` to check available devices.\nExiting...\n")
+                return
+
+        print(f"Recording from: ({default_speakers['index']}){default_speakers['name']}")
+
+        wave_file = wave.open(temp_filename, 'wb')
+        wave_file.setnchannels(default_speakers["maxInputChannels"])
+        wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
+        wave_file.setframerate(int(default_speakers["defaultSampleRate"]))
+
+        def callback(in_data, frame_count, time_info, status):
+            """Write frames and return PA flag"""
+            wave_file.writeframes(in_data)
+            return (in_data, pyaudio.paContinue)
+
+        with p.open(format=pyaudio.paInt16,
+                    channels=default_speakers["maxInputChannels"],
+                    rate=int(default_speakers["defaultSampleRate"]),
+                    frames_per_buffer=CHUNK_SIZE,
+                    input=True,
+                    input_device_index=default_speakers["index"],
+                    stream_callback=callback
+                    ) as stream:
+            """
+            Open a PA stream via context manager.
+            After leaving the context, everything will
+            be correctly closed(Stream, PyAudio manager)            
+            """
+            print(f"The next {DURATION} seconds will be written to {temp_filename}")
+            time.sleep(DURATION)  # Blocking execution while recording
+
+        wave_file.close()
+
+        # Rename the file after a delay of 0.1 seconds
+        time.sleep(0.3)
+        os.rename(temp_filename, filename)
+
 
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
@@ -119,6 +190,8 @@ def fetch_images(camera_index):
         elif key == ord('3'):  # Press '3' to switch to notes and images folder 3
             current_notes_folder = 3
             current_img_folder = 3
+        elif key == ord('r'):  # Press 'r' to start audio recording
+            threading.Thread(target=record_audio).start()
 
     # Release the capture
     cap.release()

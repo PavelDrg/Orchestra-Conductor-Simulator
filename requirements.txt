@@ -4,3 +4,4 @@ Pillow==9.2.0
 imutils~=0.5.4
 playsound~=1.3.0
 pygame~=2.5.2
+PyAudioWPatch~=0.2.12.6
