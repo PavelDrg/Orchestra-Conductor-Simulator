@@ -126,9 +126,6 @@ def play_loopback_audio(p):
     stream_out.close()
 
 
-# Modify the threading call to include both recording and playback
-threading.Thread(target=record_audio).start()
-
 
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
