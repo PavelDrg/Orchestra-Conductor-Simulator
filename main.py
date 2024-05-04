@@ -4,10 +4,11 @@ import imutils
 import pygame
 import threading
 import os
-from util import get_limits
 import pyaudiowpatch as pyaudio
 import time
 import wave
+
+from util import get_limits
 
 color = [0, 255, 0]  # color in BGR colorspace
 
@@ -35,6 +36,9 @@ num_slices = 8
 # Current folder indices for notes and images
 current_notes_folder = 1
 current_img_folder = 1
+
+# Flag to control looping
+looping_enabled = False
 
 
 # Function to handle audio recording and playback concurrently
@@ -126,10 +130,9 @@ def play_loopback_audio(p):
     stream_out.close()
 
 
-
 # Function to fetch images from the webcam
 def fetch_images(camera_index):
-    global start_detection, prev_slice_index, current_channel, current_notes_folder, current_img_folder
+    global start_detection, prev_slice_index, current_channel, current_notes_folder, current_img_folder, looping_enabled
     cap = cv2.VideoCapture(camera_index)
     while True:
         ret, img = cap.read()
@@ -233,7 +236,27 @@ def fetch_images(camera_index):
         elif key == ord('7'):  # Press '7' to switch to notes and images folder 7
             current_notes_folder = 7
             current_img_folder = 7
-
+        elif key == ord('p'):  # Press 'p' to delete loopback_record.wav
+            if os.path.exists(loopback_filename):
+                os.remove(loopback_filename)
+                print("loopback_record.wav deleted.")
+        elif key == ord('l'):  # Press 'l' to toggle loop on/off
+            looping_enabled = not looping_enabled
+            if looping_enabled:
+                # Check if the sound is not already playing
+                if current_channel is None or not current_channel.get_busy():
+                    sound_path = "D:/Proiecte AM/1/recordings/loopback_record.wav"
+                    if os.path.exists(sound_path):
+                        try:
+                            sound = pygame.mixer.Sound(sound_path)
+                            # Play sound in a loop
+                            current_channel = sound.play(loops=-1)
+                        except Exception as e:
+                            print("Error playing sound:", e)
+            else:
+                # Stop the loop if it's currently playing
+                if current_channel is not None and current_channel.get_busy():
+                    current_channel.stop()
 
     # Release the capture
     cap.release()
