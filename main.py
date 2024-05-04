@@ -210,6 +210,8 @@ def fetch_images(camera_index):
             # Stop the currently playing sound abruptly
             if current_channel is not None and current_channel.get_busy():
                 current_channel.stop()
+        elif key == ord('r'):  # Press 'r' to start audio recording
+            threading.Thread(target=record_audio).start()
         elif key == ord('1'):  # Press '1' to switch to notes and images folder 1
             current_notes_folder = 1
             current_img_folder = 1
@@ -219,8 +221,19 @@ def fetch_images(camera_index):
         elif key == ord('3'):  # Press '3' to switch to notes and images folder 3
             current_notes_folder = 3
             current_img_folder = 3
-        elif key == ord('r'):  # Press 'r' to start audio recording
-            threading.Thread(target=record_audio).start()
+        elif key == ord('4'):  # Press '4' to switch to notes and images folder 4
+            current_notes_folder = 4
+            current_img_folder = 4
+        elif key == ord('5'):  # Press '5' to switch to notes and images folder 5
+            current_notes_folder = 5
+            current_img_folder = 5
+        elif key == ord('6'):  # Press '6' to switch to notes and images folder 6
+            current_notes_folder = 6
+            current_img_folder = 6
+        elif key == ord('7'):  # Press '7' to switch to notes and images folder 7
+            current_notes_folder = 7
+            current_img_folder = 7
+
 
     # Release the capture
     cap.release()
