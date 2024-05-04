@@ -13,7 +13,7 @@ from util import get_limits
 color = [0, 255, 0]  # color in BGR colorspace
 
 # Audio recording parameters
-DURATION = 10.0
+DURATION = 8.0
 CHUNK_SIZE = 512
 temp_filename = "D:/Proiecte AM/1/recordings/temp.wav"
 loopback_filename = "D:/Proiecte AM/1/recordings/loopback_record.wav"
@@ -141,8 +141,13 @@ def fetch_images(camera_index):
 
         img = imutils.resize(img, width=800)  # Adjust the resize dimensions as needed
 
-        # Add texts for start and stop
-        start_text = "Start (s)    Stop (q)    Choir (1)    Brass(2)    Strings(3)"
+        # Draw red lines to separate the 8 vertical segments
+        segment_width = img.shape[1] // num_slices
+        for i in range(1, num_slices):
+            cv2.line(img, (segment_width * i, 0), (segment_width * i, img.shape[0]), (0, 0, 255), 2)
+
+        # Add texts for start and stop  Start (s)    Stop (q)    Choir (1)    Brass(2)    Strings(3)
+        start_text = ""
         cv2.putText(img, start_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         if start_detection:
@@ -194,12 +199,12 @@ def fetch_images(camera_index):
 
                 # Read logo and resize
                 image_path = os.path.join(image_folder, image_name)
-                logo = cv2.imread(image_path)
-                size = 100
+                logo = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)  # Load image with alpha channel
+                size = 150
                 logo = cv2.resize(logo, (size, size))
 
                 # Overlay image on the frame
-                img[-size - 10:-10, -size - 10:-10] = logo
+                overlay_alpha(img, logo, (-size - 10, -size - 10))
 
         cv2.imshow('Conductor Cam', img)
 
@@ -260,6 +265,30 @@ def fetch_images(camera_index):
 
     # Release the capture
     cap.release()
+
+
+# Function to overlay image with transparency on a frame
+def overlay_alpha(frame, overlay, position):
+    y, x = position
+
+    # Check if the overlay has an alpha channel
+    if overlay.shape[2] == 4:  # If it has 4 channels (including alpha)
+        # Slice the overlay out of the frame
+        roi = frame[y:y + overlay.shape[0], x:x + overlay.shape[1]]
+
+        # Extract the alpha channel
+        alpha = overlay[:, :, 3] / 255.0
+
+        # Calculate the inverse alpha
+        inv_alpha = 1.0 - alpha
+
+        # Blend the overlay and the ROI using the alpha channel
+        for c in range(0, 3):
+            frame[y:y + overlay.shape[0], x:x + overlay.shape[1], c] = (alpha * overlay[:, :, c] +
+                                                                        inv_alpha * roi[:, :, c])
+    else:  # If it doesn't have an alpha channel
+        # Just overlay the image without considering transparency
+        frame[y:y + overlay.shape[0], x:x + overlay.shape[1]] = overlay
 
 # Create a thread for fetching images from the webcam (assuming camera index 1)
 camera_index = 0
