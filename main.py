@@ -14,8 +14,8 @@ color = [0, 255, 0]  # color in BGR colorspace
 # Audio recording parameters
 DURATION = 10.0
 CHUNK_SIZE = 512
-temp_filename = "D:/Proiecte AM/1/recordings/temp.wav"  # Temporary filename
-filename = "D:/Proiecte AM/1/recordings/loopback_record.wav"  # Final filename
+temp_filename = "D:/Proiecte AM/1/recordings/temp.wav"
+loopback_filename = "D:/Proiecte AM/1/recordings/loopback_record.wav"
 
 # Initialize pygame mixer
 pygame.mixer.init()
@@ -36,7 +36,8 @@ num_slices = 8
 current_notes_folder = 1
 current_img_folder = 1
 
-# Function to handle audio recording
+
+# Function to handle audio recording and playback concurrently
 def record_audio():
     with pyaudio.PyAudio() as p:
         try:
@@ -65,6 +66,11 @@ def record_audio():
 
         print(f"Recording from: ({default_speakers['index']}){default_speakers['name']}")
 
+        # Start playback of existing recording if file exists
+        if os.path.exists(loopback_filename):
+            threading.Thread(target=play_loopback_audio, args=(p,)).start()
+
+        # Prepare for recording
         wave_file = wave.open(temp_filename, 'wb')
         wave_file.setnchannels(default_speakers["maxInputChannels"])
         wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
@@ -88,14 +94,40 @@ def record_audio():
             After leaving the context, everything will
             be correctly closed(Stream, PyAudio manager)            
             """
-            print(f"The next {DURATION} seconds will be written to {temp_filename}")
-            time.sleep(DURATION)  # Blocking execution while recording
+            print(f"The next {DURATION} seconds will be recorded and played back.")
+            time.sleep(DURATION)  # Blocking execution while recording and playing back
 
         wave_file.close()
-
-        # Rename the file after a delay of 0.1 seconds
+        # Add a delay to ensure recording is saved
         time.sleep(0.3)
-        os.rename(temp_filename, filename)
+
+        # Delete the old loopback_record.wav file if it exists
+        if os.path.exists(loopback_filename):
+            os.remove(loopback_filename)
+
+        # Rename the temp file to loopback_record.wav after a delay
+        os.rename(temp_filename, loopback_filename)
+
+
+# Function to handle playback of loopback_record.wav
+def play_loopback_audio(p):
+    wave_file = wave.open(loopback_filename, 'rb')
+    stream_out = p.open(format=p.get_format_from_width(wave_file.getsampwidth()),
+                        channels=wave_file.getnchannels(),
+                        rate=wave_file.getframerate(),
+                        output=True)
+    data = wave_file.readframes(CHUNK_SIZE)
+    while data:
+        stream_out.write(data)
+        data = wave_file.readframes(CHUNK_SIZE)
+
+    wave_file.close()
+    stream_out.stop_stream()
+    stream_out.close()
+
+
+# Modify the threading call to include both recording and playback
+threading.Thread(target=record_audio).start()
 
 
 # Function to fetch images from the webcam
