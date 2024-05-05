@@ -7,8 +7,7 @@ import os
 import pyaudiowpatch as pyaudio
 import time
 import wave
-
-from util import get_limits
+#from util import get_limits
 
 color = [0, 255, 0]  # culoarea "baghetei de dirijor" in BGR (blue green red)
 
@@ -87,7 +86,7 @@ def record_audio():
         if os.path.exists(loopback_filename):
             threading.Thread(target=play_loopback_audio, args=(p,)).start()
 
-        # Pregatire pentru recording
+        # Pregatire pentru inregistrare
         wave_file = wave.open(temp_filename, 'wb')
         wave_file.setnchannels(default_speakers["maxInputChannels"])
         wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
@@ -153,14 +152,20 @@ def fetch_images(camera_index):
 
         img = imutils.resize(img, width=800)
 
+        # Adaugarea unei benzi negre deasupra imaginii
+        black_strip = np.zeros((100, img.shape[1], 3), dtype=np.uint8)
+        img = np.vstack((black_strip, img))
+
         # In caz ca vrem sa vedem segmentele (se pot comenta urmatoarele 3 linii daca nu)
         segment_width = img.shape[1] // num_slices
         for i in range(1, num_slices):
             cv2.line(img, (segment_width * i, 0), (segment_width * i, img.shape[0]), (0, 0, 255), 2)
 
         # Text pentru controale
-        start_text = ""
-        cv2.putText(img, start_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        start_text = "S - Start    Q - Stop    Esc - Iesire    R - Inregistrare    L - Loop    P - Reset"
+        cv2.putText(img, start_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+        second_text = "1 - Cor | 2 - Trompeta | 3 - Vioara | 4 - Clopotei | 5 - Pian | 6 - Voce | 7 - Pad"
+        cv2.putText(img, second_text, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
 
         if start_detection:
             # Se face detectia pentru frame-ul obtinut
